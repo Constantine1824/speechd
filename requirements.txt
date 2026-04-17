@@ -1,0 +1,21 @@
+# Core audio
+torchaudio>=2.0.0
+soundfile>=0.12.1
+librosa>=0.10.0
+numpy>=1.24.0
+
+# Stage 1 — Source Separation + Denoising
+speechbrain>=1.0.0          # SepFormer + ECAPA-TDNN
+
+# Stage 2 — VAD
+silero-vad>=5.1.0
+
+# Stage 3 — Speaker Embeddings + Clustering
+scikit-learn>=1.3.0
+
+# Stage 4 — ASR
+faster-whisper>=1.0.0
+
+# Utilities
+torch>=2.0.0
+huggingface-hub>=0.20.0
