@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torchaudio
 
-from .types import Segment
+from schemas import Segment
 
 _vad_model = None
 _get_speech_timestamps = None

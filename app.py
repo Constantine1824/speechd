@@ -22,6 +22,7 @@ Usage examples:
 """
 
 import argparse
+
 from pipeline import PipelineConfig, run
 
 
@@ -34,35 +35,59 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--file", required=True, help="Path to input audio file")
 
     # Stage 1 — Separation
-    parser.add_argument("--speakers", type=int, default=2,
-                        help="Number of speakers (default: 2)")
-    parser.add_argument("--denoise", action="store_true",
-                        help="Denoise only (single speaker recording)")
+    parser.add_argument(
+        "--speakers", type=int, default=2, help="Number of speakers (default: 2)"
+    )
+    parser.add_argument(
+        "--denoise", action="store_true", help="Denoise only (single speaker recording)"
+    )
 
     # Stage 3 — Clustering
-    parser.add_argument("--auto-speakers", action="store_true",
-                        help="Automatically estimate number of speakers")
-    parser.add_argument("--max-speakers", type=int, default=8,
-                        help="Max speakers to consider when auto-estimating (default: 8)")
+    parser.add_argument(
+        "--auto-speakers",
+        action="store_true",
+        help="Automatically estimate number of speakers",
+    )
+    parser.add_argument(
+        "--max-speakers",
+        type=int,
+        default=8,
+        help="Max speakers to consider when auto-estimating (default: 8)",
+    )
 
     # Stage 4 — Whisper
-    parser.add_argument("--whisper", default="base",
-                        choices=["tiny", "base", "small", "medium", "large-v3"],
-                        help="Whisper model size (default: base)")
-    parser.add_argument("--device", default="cpu", choices=["cpu", "cuda"],
-                        help="Device to run Whisper on (default: cpu)")
-    parser.add_argument("--compute", default="int8",
-                        choices=["int8", "float16", "float32"],
-                        help="Compute type for Whisper (default: int8)")
-    parser.add_argument("--language", default=None,
-                        help="Language code e.g. 'en', 'fr' (default: auto-detect)")
+    parser.add_argument(
+        "--whisper",
+        default="base",
+        choices=["tiny", "base", "small", "medium", "large-v3"],
+        help="Whisper model size (default: base)",
+    )
+    parser.add_argument(
+        "--device",
+        default="cpu",
+        choices=["cpu", "cuda"],
+        help="Device to run Whisper on (default: cpu)",
+    )
+    parser.add_argument(
+        "--compute",
+        default="int8",
+        choices=["int8", "float16", "float32"],
+        help="Compute type for Whisper (default: int8)",
+    )
+    parser.add_argument(
+        "--language",
+        default=None,
+        help="Language code e.g. 'en', 'fr' (default: auto-detect)",
+    )
 
     # Output
-    parser.add_argument("--save", default=None,
-                        help="Save transcript to this path")
-    parser.add_argument("--fmt", default="json",
-                        choices=["json", "plain", "rttm", "srt"],
-                        help="Output format (default: json)")
+    parser.add_argument("--save", default=None, help="Save transcript to this path")
+    parser.add_argument(
+        "--fmt",
+        default="json",
+        choices=["json", "plain", "rttm", "srt"],
+        help="Output format (default: json)",
+    )
 
     return parser.parse_args()
 

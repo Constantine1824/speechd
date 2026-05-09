@@ -6,12 +6,11 @@ import torchaudio
 from cluster import cluster_speakers
 from embed import ECAPA_SR, extract_embeddings
 from output import pretty_print, save
+from schemas import PipelineConfig, TranscribedSegment
 from separate import TARGET_SR as SEP_SR
 from separate import separate
 from transcribe import WHISPER_SR, transcribe_all
 from vad import SILERO_SR, detect_speech
-
-from .types import PipelineConfig, TranscribedSegment
 
 
 def _resample_np(audio: np.ndarray, from_sr: int, to_sr: int) -> np.ndarray:

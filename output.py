@@ -1,5 +1,6 @@
 import json
-from types import TranscribedSegment
+
+from schemas import TranscribedSegment
 
 
 def _fmt_time(seconds: float) -> str:

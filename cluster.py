@@ -3,7 +3,7 @@ from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import normalize
 
-from .types import LabeledSegment, Segment
+from schemas import LabeledSegment, Segment
 
 
 def estimate_num_speakers(
