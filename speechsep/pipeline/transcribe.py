@@ -1,7 +1,7 @@
 import numpy as np
 from faster_whisper import WhisperModel
 
-from schemas import LabeledSegment, TranscribedSegment
+from speechsep.schemas import LabeledSegment, TranscribedSegment
 
 _whisper_model: WhisperModel | None = None
 _whisper_model_size: str = ""

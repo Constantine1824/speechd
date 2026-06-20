@@ -1,15 +1,15 @@
 import numpy as np
 import torchaudio
 
-from cluster import cluster_speakers
-from embed import extract_embeddings
-from output import pretty_print, save
-from overlap import resolve_overlaps
-from schemas import PipelineConfig, TranscribedSegment
-from separate import TARGET_SR as SEP_SR
-from separate import separate
-from transcribe import transcribe_all
-from vad import SILERO_SR, detect_speech
+from speechsep.output import pretty_print, save
+from speechsep.pipeline.cluster import cluster_speakers
+from speechsep.pipeline.embed import extract_embeddings
+from speechsep.pipeline.overlap import resolve_overlaps
+from speechsep.pipeline.separate import TARGET_SR as SEP_SR
+from speechsep.pipeline.separate import separate
+from speechsep.pipeline.transcribe import transcribe_all
+from speechsep.pipeline.vad import SILERO_SR, detect_speech
+from speechsep.schemas import PipelineConfig, TranscribedSegment
 
 
 def _resample_np(audio: np.ndarray, from_sr: int, to_sr: int) -> np.ndarray:

@@ -1,5 +1,5 @@
-from overlap import _overlap_ratio, resolve_overlaps
-from schemas import TranscribedSegment
+from speechsep.pipeline.overlap import _overlap_ratio, resolve_overlaps
+from speechsep.schemas import TranscribedSegment
 
 
 def seg(start, end, speaker_id, conf=0.9, source_id=0, text="x"):

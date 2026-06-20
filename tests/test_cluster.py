@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from cluster import cluster_speakers, estimate_num_speakers
-from schemas import Segment
+from speechsep.pipeline.cluster import cluster_speakers, estimate_num_speakers
+from speechsep.schemas import Segment
 
 
 def _two_clusters(n_per=3, dim=192, seed=0):

@@ -1,6 +1,6 @@
 import json
 
-from schemas import TranscribedSegment
+from speechsep.schemas import TranscribedSegment
 
 
 def _fmt_time(seconds: float) -> str:

@@ -1,36 +1,39 @@
 """
-app.py — CLI Entrypoint
+cli.py — CLI Entrypoint
 ------------------------
-Run the pipeline from the command line.
+Run the pipeline from the command line (via `python -m speechsep` or the
+`speechsep` console script).
 
 Usage examples:
   # Transcribe a file with 2 speakers
-  python app.py --file meeting.wav --speakers 2
+  python -m speechsep --file meeting.wav --speakers 2
 
   # Denoise only (single speaker, noisy recording)
-  python app.py --file call.wav --denoise
+  python -m speechsep --file call.wav --denoise
 
   # Auto-estimate number of speakers, save JSON output
-  python app.py --file panel.wav --auto-speakers --save out.json
+  python -m speechsep --file panel.wav --auto-speakers --save out.json
 
   # Use large whisper model on GPU
-  python app.py --file long_meeting.wav --speakers 3 \
-                --whisper large-v3 --device cuda --compute float16
+  python -m speechsep --file long_meeting.wav --speakers 3 \
+                      --whisper large-v3 --device cuda --compute float16
 
   # Force English transcription
-  python app.py --file audio.wav --speakers 2 --language en
+  python -m speechsep --file audio.wav --speakers 2 --language en
 """
 
 import argparse
 import sys
 from pathlib import Path
 
-from pipeline import PipelineConfig, run
+from speechsep.main import run
+from speechsep.schemas import PipelineConfig
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Sound separation + speaker diarization + transcription pipeline"
+        prog="speechsep",
+        description="Sound separation + speaker diarization + transcription pipeline",
     )
 
     # Input

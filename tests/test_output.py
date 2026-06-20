@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from output import (
+from speechsep.output import (
     _fmt_time,
     _srt_time,
     save,
@@ -11,7 +11,7 @@ from output import (
     to_rttm,
     to_srt,
 )
-from schemas import TranscribedSegment
+from speechsep.schemas import TranscribedSegment
 
 
 @pytest.fixture

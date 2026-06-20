@@ -15,7 +15,7 @@ simultaneous speech:
     speech, which is the whole reason separation runs in the first place.
 """
 
-from schemas import TranscribedSegment
+from speechsep.schemas import TranscribedSegment
 
 
 def _overlap_ratio(a: TranscribedSegment, b: TranscribedSegment) -> float:

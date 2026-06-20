@@ -40,22 +40,25 @@ pip install -r requirements.txt
 
 Basic command-line usage:
 
+Run via `python -m speechsep` (or the `speechsep` console script after
+`pip install .`):
+
 ```bash
 # Transcribe a file with 2 speakers
-python app.py --file meeting.wav --speakers 2
+python -m speechsep --file meeting.wav --speakers 2
 
 # Denoise only (single speaker, noisy recording)
-python app.py --file call.wav --denoise
+python -m speechsep --file call.wav --denoise
 
 # Auto-estimate number of speakers, save JSON output
-python app.py --file panel.wav --auto-speakers --save out.json
+python -m speechsep --file panel.wav --auto-speakers --save out.json
 
 # Use large whisper model on GPU
-python app.py --file long_meeting.wav --speakers 3 \
+python -m speechsep --file long_meeting.wav --speakers 3 \
     --whisper large-v3 --device cuda --compute float16
 
 # Force English transcription
-python app.py --file audio.wav --speakers 2 --language en
+python -m speechsep --file audio.wav --speakers 2 --language en
 ```
 
 > **Note:** SepFormer separation supports **2 or 3 speakers** only. `--auto-speakers`
@@ -86,16 +89,21 @@ See `requirements.txt` for detailed dependencies. Key packages include:
 
 ```
 SpeechSep/
-├── app.py              # CLI entrypoint
-├── pipeline.py         # Main orchestration pipeline
-├── separate.py         # Source separation/denoising
-├── vad.py              # Voice activity detection
-├── embed.py            # Speaker embedding extraction
-├── cluster.py          # Speaker clustering
-├── transcribe.py       # ASR transcription
-├── output.py           # Transcript formatting and saving
-├── schemas.py          # Data classes and configuration
-├── tests/              # Pytest unit tests (no model downloads required)
+├── speechsep/
+│   ├── __main__.py     # enables `python -m speechsep`
+│   ├── cli.py          # CLI entrypoint (argparse)
+│   ├── main.py         # pipeline orchestration (run())
+│   ├── schemas.py      # data classes and configuration
+│   ├── output.py       # transcript formatting and saving
+│   └── pipeline/       # the processing stages
+│       ├── separate.py     # source separation / denoising
+│       ├── vad.py          # voice activity detection
+│       ├── embed.py        # speaker embedding extraction
+│       ├── cluster.py      # speaker clustering
+│       ├── transcribe.py   # ASR transcription
+│       └── overlap.py      # cross-source overlap resolution
+├── tests/              # pytest unit tests (no model downloads required)
+├── pyproject.toml
 └── README.md
 ```
 

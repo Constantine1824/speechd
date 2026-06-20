@@ -1,7 +1,7 @@
 import numpy as np
 
-from pipeline import _resample_np
-from separate import resample
+from speechsep.main import _resample_np
+from speechsep.pipeline.separate import resample
 
 
 def test_resample_np_identity_when_rates_match():

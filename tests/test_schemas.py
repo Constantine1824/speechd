@@ -1,6 +1,6 @@
 import numpy as np
 
-from schemas import LabeledSegment, Segment, TranscribedSegment
+from speechsep.schemas import LabeledSegment, Segment, TranscribedSegment
 
 
 def test_segment_duration():

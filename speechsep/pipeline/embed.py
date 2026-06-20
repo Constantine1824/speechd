@@ -3,7 +3,7 @@ import torch
 import torchaudio
 from speechbrain.inference.speaker import EncoderClassifier
 
-from schemas import Segment
+from speechsep.schemas import Segment
 
 ECAPA_CHECKPOINT = "speechbrain/spkrec-ecapa-voxceleb"
 ECAPA_SR = 16000  # ECAPA-TDNN expects 16kHz audio

@@ -3,7 +3,7 @@ from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import normalize
 
-from schemas import LabeledSegment, Segment
+from speechsep.schemas import LabeledSegment, Segment
 
 
 def _cluster(embeddings: np.ndarray, k: int) -> np.ndarray:

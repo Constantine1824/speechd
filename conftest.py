@@ -1,7 +1,7 @@
 """Pytest configuration: ensure the repo root is importable.
 
-The project uses a flat module layout (schemas.py, output.py, ...), so tests
-need the repo root on sys.path to `import schemas` etc.
+Tests import the package as `speechsep.*`; putting the repo root on sys.path
+lets `import speechsep` resolve without requiring an editable install.
 """
 
 import sys
