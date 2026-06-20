@@ -1,16 +1,15 @@
-from dataclasses import dataclass
-
 import numpy as np
 import torchaudio
 
-from cluster import cluster_speakers
-from embed import ECAPA_SR, extract_embeddings
-from output import pretty_print, save
-from schemas import PipelineConfig, TranscribedSegment
-from separate import TARGET_SR as SEP_SR
-from separate import separate
-from transcribe import WHISPER_SR, transcribe_all
-from vad import SILERO_SR, detect_speech
+from speechsep.output import pretty_print, save
+from speechsep.pipeline.cluster import cluster_speakers
+from speechsep.pipeline.embed import extract_embeddings
+from speechsep.pipeline.overlap import resolve_overlaps
+from speechsep.pipeline.separate import TARGET_SR as SEP_SR
+from speechsep.pipeline.separate import separate
+from speechsep.pipeline.transcribe import transcribe_all
+from speechsep.pipeline.vad import SILERO_SR, detect_speech
+from speechsep.schemas import PipelineConfig, TranscribedSegment
 
 
 def _resample_np(audio: np.ndarray, from_sr: int, to_sr: int) -> np.ndarray:
@@ -65,6 +64,7 @@ def run(
         sample_rate=sample_rate,
         num_speakers=cfg.num_speakers,
         denoise_only=cfg.denoise_only,
+        device=cfg.device,
     )
     current_sr = SEP_SR
 
@@ -74,15 +74,18 @@ def run(
     for source_idx, source_audio in enumerate(sources):
         print(f"  → Source {source_idx + 1}/{len(sources)}")
 
-        # Resample from 8kHz to 16kHz for silero-vad
-        # audio_16k = _resample_np(source_audio, current_sr, SILERO_SR)
+        # Resample from 8kHz (separation output) to 16kHz for silero-vad.
+        # Everything downstream (VAD timestamps, ECAPA embeddings, Whisper)
+        # assumes 16kHz, so this conversion must happen here.
+        audio_16k = _resample_np(source_audio, current_sr, SILERO_SR)
 
         segs = detect_speech(
-            source_audio,
+            audio_16k,
             sample_rate=SILERO_SR,
             threshold=cfg.vad_threshold,
             min_speech_duration_ms=cfg.min_speech_ms,
             min_silence_duration_ms=cfg.min_silence_ms,
+            source_id=source_idx,
         )
         all_segments.extend(segs)
 
@@ -98,6 +101,7 @@ def run(
     embeddings, valid_segments = extract_embeddings(
         all_segments,
         sample_rate=SILERO_SR,
+        device=cfg.device,
     )
 
     k = None if cfg.auto_num_speakers else cfg.num_speakers
@@ -117,6 +121,12 @@ def run(
         compute_type=cfg.compute_type,
         language=cfg.language,
     )
+
+    # Remove same-speaker duplicates introduced by running VAD on each
+    # separated source (only meaningful when separation produced >1 source).
+    if len(sources) > 1:
+        print("\nResolving cross-source overlaps")
+        transcribed = resolve_overlaps(transcribed)
 
     print("\nStage 5: Output")
     if cfg.print_output:

@@ -1,12 +1,15 @@
 import json
 
-from schemas import TranscribedSegment
+from speechsep.schemas import TranscribedSegment
 
 
 def _fmt_time(seconds: float) -> str:
-    """Format seconds as mm:ss.ms"""
-    m = int(seconds // 60)
+    """Format seconds as mm:ss.ms, or hh:mm:ss.ms past one hour."""
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
     s = seconds % 60
+    if h:
+        return f"{h:d}:{m:02d}:{s:06.3f}"
     return f"{m:02d}:{s:06.3f}"
 
 

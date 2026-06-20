@@ -1,8 +1,7 @@
 import numpy as np
 from faster_whisper import WhisperModel
 
-from cluster import LabeledSegment
-from schemas import TranscribedSegment
+from speechsep.schemas import LabeledSegment, TranscribedSegment
 
 _whisper_model: WhisperModel | None = None
 _whisper_model_size: str = ""
@@ -116,6 +115,7 @@ def transcribe_all(
                 text=text,
                 language=lang,
                 confidence=conf,
+                source_id=ls.source_id,
             )
         )
 

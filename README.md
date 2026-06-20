@@ -13,7 +13,7 @@ SpeechSep processes audio files to:
 
 ## Features
 
-- **Source Separation**: Uses SepFormer models for 2/3 speaker separation or denoising
+- **Source Separation**: Uses SepFormer models for 2- or 3-speaker separation, or single-speaker denoising (`--denoise`)
 - **Voice Activity Detection**: Powered by silero-vad
 - **Speaker Embeddings**: ECAPA-TDNN for robust speaker representation
 - **Speaker Clustering**: Spectral clustering with automatic speaker estimation
@@ -40,23 +40,33 @@ pip install -r requirements.txt
 
 Basic command-line usage:
 
+Run via `python -m speechsep` (or the `speechsep` console script after
+`pip install .`):
+
 ```bash
 # Transcribe a file with 2 speakers
-python app.py --file meeting.wav --speakers 2
+python -m speechsep --file meeting.wav --speakers 2
 
 # Denoise only (single speaker, noisy recording)
-python app.py --file call.wav --denoise
+python -m speechsep --file call.wav --denoise
 
 # Auto-estimate number of speakers, save JSON output
-python app.py --file panel.wav --auto-speakers --save out.json
+python -m speechsep --file panel.wav --auto-speakers --save out.json
 
 # Use large whisper model on GPU
-python app.py --file long_meeting.wav --speakers 3 \
+python -m speechsep --file long_meeting.wav --speakers 3 \
     --whisper large-v3 --device cuda --compute float16
 
 # Force English transcription
-python app.py --file audio.wav --speakers 2 --language en
+python -m speechsep --file audio.wav --speakers 2 --language en
 ```
+
+> **Note:** SepFormer separation supports **2 or 3 speakers** only. `--auto-speakers`
+> affects the *clustering* stage (which can resolve up to `--max-speakers`), not the
+> separation model. For single-speaker recordings use `--denoise`.
+
+`--device cuda` is honored by every model stage (separation, embeddings, and
+transcription), not just Whisper.
 
 ## Output Formats
 
@@ -79,16 +89,32 @@ See `requirements.txt` for detailed dependencies. Key packages include:
 
 ```
 SpeechSep/
-├── app.py              # CLI entrypoint
-├── pipeline.py         # Main orchestration pipeline
-├── separate.py         # Source separation/denoising
-├── vad.py              # Voice activity detection
-├── embed.py            # Speaker embedding extraction
-├── cluster.py          # Speaker clustering
-├── transcribe.py       # ASR transcription
-├── output.py           # Transcript formatting and saving
-├── types.py            # Data classes and configuration
+├── speechsep/
+│   ├── __main__.py     # enables `python -m speechsep`
+│   ├── cli.py          # CLI entrypoint (argparse)
+│   ├── main.py         # pipeline orchestration (run())
+│   ├── schemas.py      # data classes and configuration
+│   ├── output.py       # transcript formatting and saving
+│   └── pipeline/       # the processing stages
+│       ├── separate.py     # source separation / denoising
+│       ├── vad.py          # voice activity detection
+│       ├── embed.py        # speaker embedding extraction
+│       ├── cluster.py      # speaker clustering
+│       ├── transcribe.py   # ASR transcription
+│       └── overlap.py      # cross-source overlap resolution
+├── tests/              # pytest unit tests (no model downloads required)
+├── pyproject.toml
 └── README.md
+```
+
+## Development
+
+```bash
+# Install with dev dependencies
+pip install -e ".[dev]"
+
+# Run the test suite (pure-logic tests — no model downloads)
+python -m pytest
 ```
 
 ## Future Improvements
@@ -100,9 +126,10 @@ This is a base implementation. Planned enhancements include:
 - Language identification
 - Web API interface
 - Docker containerization
-- Comprehensive test suite
+- Expanded test coverage (end-to-end / model-level tests)
 - Performance benchmarking
+- Overlap resolution across separated sources
 
 ## License
 
-MIT
+Apache License 2.0 — see [LICENSE](LICENSE).
