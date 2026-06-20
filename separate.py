@@ -13,14 +13,16 @@ TARGET_SR = 8000  # SepFormer expects 8kHz audio
 _model_cache: dict = {}
 
 
-def _load_model(checkpoint: str) -> SepformerSeparation:
-    if checkpoint not in _model_cache:
-        print(f"Loading SepFormer checkpoint: {checkpoint}")
-        _model_cache[checkpoint] = SepformerSeparation.from_hparams(
+def _load_model(checkpoint: str, device: str = "cpu") -> SepformerSeparation:
+    cache_key = (checkpoint, device)
+    if cache_key not in _model_cache:
+        print(f"Loading SepFormer checkpoint: {checkpoint} on {device}")
+        _model_cache[cache_key] = SepformerSeparation.from_hparams(
             source=checkpoint,
             savedir=f"pretrained_models/{checkpoint.split('/')[-1]}",
+            run_opts={"device": device},
         )
-    return _model_cache[checkpoint]
+    return _model_cache[cache_key]
 
 
 def resample(audio: np.ndarray, orig_sr: int, target_sr: int = TARGET_SR) -> np.ndarray:
@@ -37,6 +39,7 @@ def separate(
     sample_rate: int,
     num_speakers: int = 2,
     denoise_only: bool = False,
+    device: str = "cpu",
 ) -> list[np.ndarray]:
     """
     Separate or denoise an audio signal.
@@ -48,6 +51,7 @@ def separate(
     num_speakers : expected number of speakers (used to pick checkpoint)
                    ignored when denoise_only=True
     denoise_only : if True, runs denoising instead of speaker separation
+    device       : "cpu" or "cuda" — where to run the SepFormer model
 
     Returns
     -------
@@ -62,22 +66,25 @@ def separate(
     elif num_speakers == 3:
         checkpoint = SEPARATE_3SPK
     else:
-        raise ValueError(f"num_speakers must be 2 or 3, got {num_speakers}")
+        raise ValueError(
+            f"Separation supports 2 or 3 speakers, got num_speakers={num_speakers}. "
+            f"Use --denoise for single-speaker recordings."
+        )
 
-    model = _load_model(checkpoint)
+    model = _load_model(checkpoint, device=device)
 
     # SepFormer expects 8kHz mono
     audio_8k = resample(audio, sample_rate, TARGET_SR)
 
-    # Convert to tensor shape (1, T) expected by SpeechBrain
-    mix_tensor = torch.tensor(audio_8k).unsqueeze(0)
+    # Convert to tensor shape (1, T) expected by SpeechBrain, on the model's device
+    mix_tensor = torch.tensor(audio_8k).unsqueeze(0).to(device)
 
     # Run separation — returns tensor of shape (T, num_sources)
     with torch.no_grad():
         est_sources = model.separate_batch(mix_tensor)  # (1, T, num_sources)
 
-    # Unpack into list of numpy arrays
-    est_sources = est_sources.squeeze(0)  # (T, num_sources)
+    # Unpack into list of numpy arrays (move back to CPU before numpy conversion)
+    est_sources = est_sources.squeeze(0).cpu()  # (T, num_sources)
     sources = [est_sources[:, i].numpy() for i in range(est_sources.shape[1])]
 
     print(f"Produced {len(sources)} source(s) at {TARGET_SR}Hz")

@@ -13,7 +13,7 @@ SpeechSep processes audio files to:
 
 ## Features
 
-- **Source Separation**: Uses SepFormer models for 2/3 speaker separation or denoising
+- **Source Separation**: Uses SepFormer models for 2- or 3-speaker separation, or single-speaker denoising (`--denoise`)
 - **Voice Activity Detection**: Powered by silero-vad
 - **Speaker Embeddings**: ECAPA-TDNN for robust speaker representation
 - **Speaker Clustering**: Spectral clustering with automatic speaker estimation
@@ -58,6 +58,13 @@ python app.py --file long_meeting.wav --speakers 3 \
 python app.py --file audio.wav --speakers 2 --language en
 ```
 
+> **Note:** SepFormer separation supports **2 or 3 speakers** only. `--auto-speakers`
+> affects the *clustering* stage (which can resolve up to `--max-speakers`), not the
+> separation model. For single-speaker recordings use `--denoise`.
+
+`--device cuda` is honored by every model stage (separation, embeddings, and
+transcription), not just Whisper.
+
 ## Output Formats
 
 - **JSON**: Structured data with speaker, timestamps, text, and confidence
@@ -87,8 +94,19 @@ SpeechSep/
 ├── cluster.py          # Speaker clustering
 ├── transcribe.py       # ASR transcription
 ├── output.py           # Transcript formatting and saving
-├── types.py            # Data classes and configuration
+├── schemas.py          # Data classes and configuration
+├── tests/              # Pytest unit tests (no model downloads required)
 └── README.md
+```
+
+## Development
+
+```bash
+# Install with dev dependencies
+pip install -e ".[dev]"
+
+# Run the test suite (pure-logic tests — no model downloads)
+python -m pytest
 ```
 
 ## Future Improvements
@@ -100,9 +118,10 @@ This is a base implementation. Planned enhancements include:
 - Language identification
 - Web API interface
 - Docker containerization
-- Comprehensive test suite
+- Expanded test coverage (end-to-end / model-level tests)
 - Performance benchmarking
+- Overlap resolution across separated sources
 
 ## License
 
-MIT
+Apache License 2.0 — see [LICENSE](LICENSE).

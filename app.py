@@ -22,6 +22,8 @@ Usage examples:
 """
 
 import argparse
+import sys
+from pathlib import Path
 
 from pipeline import PipelineConfig, run
 
@@ -94,6 +96,16 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     args = parse_args()
+
+    audio_path = Path(args.file)
+    if not audio_path.is_file():
+        sys.exit(f"Error: input file not found: {args.file}")
+
+    if args.compute == "int8" and args.device == "cuda":
+        print(
+            "Warning: compute_type 'int8' is intended for CPU. "
+            "Consider --compute float16 on CUDA."
+        )
 
     config = PipelineConfig(
         num_speakers=args.speakers,
