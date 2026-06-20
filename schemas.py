@@ -10,6 +10,7 @@ class Segment:
     start: float
     end: float
     audio: np.ndarray
+    source_id: int = -1  # index of the separated source this came from (-1 = unknown)
 
     @property
     def duration(self) -> float:
@@ -39,6 +40,10 @@ class LabeledSegment:
         return self.segment.audio
 
     @property
+    def source_id(self) -> int:
+        return self.segment.source_id
+
+    @property
     def speaker_label(self) -> str:
         return f"SPEAKER_{self.speaker_id:02d}"
 
@@ -59,6 +64,7 @@ class TranscribedSegment:
     text: str
     language: str = "en"
     confidence: float = 1.0
+    source_id: int = -1  # separated source this came from (-1 = unknown)
 
     def __repr__(self):
         return f'{self.speaker_label}: "{self.text}"'

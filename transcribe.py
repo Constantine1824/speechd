@@ -115,6 +115,7 @@ def transcribe_all(
                 text=text,
                 language=lang,
                 confidence=conf,
+                source_id=ls.source_id,
             )
         )
 

@@ -31,6 +31,7 @@ def detect_speech(
     min_speech_duration_ms: int = 250,
     min_silence_duration_ms: int = 100,
     padding_ms: int = 30,
+    source_id: int = -1,
 ) -> list[Segment]:
     """
     Detect speech segments in an audio array.
@@ -43,6 +44,9 @@ def detect_speech(
     min_speech_duration_ms  : discard speech chunks shorter than this
     min_silence_duration_ms : fill gaps shorter than this (merges nearby speech)
     padding_ms              : add padding around each detected segment
+    source_id               : index of the separated source these segments came
+                              from; tagged onto each Segment for later overlap
+                              resolution (-1 = unknown / single source)
 
     Returns
     -------
@@ -79,7 +83,9 @@ def detect_speech(
         start_sec = start_sample / SILERO_SR
         end_sec = end_sample / SILERO_SR
         chunk = audio_16k[start_sample:end_sample]
-        segments.append(Segment(start=start_sec, end=end_sec, audio=chunk))
+        segments.append(
+            Segment(start=start_sec, end=end_sec, audio=chunk, source_id=source_id)
+        )
 
     print(f"[vad] Found {len(segments)} speech segment(s)")
     return segments

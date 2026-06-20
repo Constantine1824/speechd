@@ -4,6 +4,7 @@ import torchaudio
 from cluster import cluster_speakers
 from embed import extract_embeddings
 from output import pretty_print, save
+from overlap import resolve_overlaps
 from schemas import PipelineConfig, TranscribedSegment
 from separate import TARGET_SR as SEP_SR
 from separate import separate
@@ -84,6 +85,7 @@ def run(
             threshold=cfg.vad_threshold,
             min_speech_duration_ms=cfg.min_speech_ms,
             min_silence_duration_ms=cfg.min_silence_ms,
+            source_id=source_idx,
         )
         all_segments.extend(segs)
 
@@ -119,6 +121,12 @@ def run(
         compute_type=cfg.compute_type,
         language=cfg.language,
     )
+
+    # Remove same-speaker duplicates introduced by running VAD on each
+    # separated source (only meaningful when separation produced >1 source).
+    if len(sources) > 1:
+        print("\nResolving cross-source overlaps")
+        transcribed = resolve_overlaps(transcribed)
 
     print("\nStage 5: Output")
     if cfg.print_output:
