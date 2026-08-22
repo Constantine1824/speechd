@@ -1,22 +1,4 @@
-"""Overlap resolution for separated-source diarization.
-
-Running VAD independently on each separated source produces duplicate segments
-for the same moment of audio: SepFormer leaks each speaker into the other
-source channels, so one real utterance is detected once per source. After
-clustering and transcription these show up as the same words repeated.
-
-`resolve_overlaps` removes those leakage duplicates while preserving genuine
-simultaneous speech:
-
-  * Two segments that overlap substantially in time AND share the same speaker
-    are treated as the same utterance captured twice -> the lower-confidence
-    copy is dropped.
-  * Overlaps between *different* speakers are kept -- that is real overlapped
-    speech, which is the whole reason separation runs in the first place.
-"""
-
 from speechsep.schemas import TranscribedSegment
-
 
 def _overlap_ratio(a: TranscribedSegment, b: TranscribedSegment) -> float:
     """Fraction of the shorter segment that overlaps the other (0.0–1.0)."""
