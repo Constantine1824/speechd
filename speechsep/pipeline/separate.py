@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torchaudio
 from speechbrain.inference.separation import SepformerSeparation
+from speechbrain.utils.fetching import LocalStrategy
 
 # Checkpoint names for each use case
 DENOISE_MODEL = "speechbrain/sepformer-wham"
@@ -9,6 +10,12 @@ SEPARATE_2SPK = "speechbrain/sepformer-libri2mix"
 SEPARATE_3SPK = "speechbrain/sepformer-libri3mix"
 
 TARGET_SR = 8000  # SepFormer expects 8kHz audio
+
+# Long inputs are separated in overlapping chunks: SepFormer's attention cost
+# grows quadratically with sequence length, so a single full-length pass on a
+# multi-minute file exhausts system memory.
+CHUNK_SEC = 30
+CHUNK_OVERLAP_SEC = 1
 
 _model_cache: dict = {}
 
@@ -21,6 +28,8 @@ def _load_model(checkpoint: str, device: str = "cpu") -> SepformerSeparation:
             source=checkpoint,
             savedir=f"pretrained_models/{checkpoint.split('/')[-1]}",
             run_opts={"device": device},
+            # Windows: symlinking fetched files requires elevated privileges
+            local_strategy=LocalStrategy.COPY,
         )
     return _model_cache[cache_key]
 
@@ -76,19 +85,66 @@ def separate(
     # SepFormer expects 8kHz mono
     audio_8k = resample(audio, sample_rate, TARGET_SR)
 
-    # Convert to tensor shape (1, T) expected by SpeechBrain, on the model's device
-    mix_tensor = torch.tensor(audio_8k).unsqueeze(0).to(device)
-
-    # Run separation — returns tensor of shape (T, num_sources)
-    with torch.no_grad():
-        est_sources = model.separate_batch(mix_tensor)  # (1, T, num_sources)
-
-    # Unpack into list of numpy arrays (move back to CPU before numpy conversion)
-    est_sources = est_sources.squeeze(0).cpu()  # (T, num_sources)
-    sources = [est_sources[:, i].numpy() for i in range(est_sources.shape[1])]
+    sources = _separate_chunked(model, audio_8k, device)
 
     print(f"Produced {len(sources)} source(s) at {TARGET_SR}Hz")
     return sources
+
+
+def _separate_chunked(
+    model: SepformerSeparation, audio_8k: np.ndarray, device: str
+) -> list[np.ndarray]:
+    """
+    Run separation over overlapping chunks and stitch with overlap-add.
+
+    SepFormer's per-chunk output order is arbitrary (source 0/1 may swap
+    between chunks); the short crossfade keeps discontinuities minor and the
+    downstream VAD/embedding/overlap-resolution stages tolerate occasional
+    swaps across chunk boundaries.
+    """
+    total = len(audio_8k)
+    chunk_len = CHUNK_SEC * TARGET_SR
+    overlap = CHUNK_OVERLAP_SEC * TARGET_SR
+    hop = chunk_len - overlap
+
+    num_chunks = 1 if total <= chunk_len else -(-(total - overlap) // hop)
+    if num_chunks > 1:
+        print(
+            f"Separating in {num_chunks} chunks of {CHUNK_SEC}s "
+            f"({CHUNK_OVERLAP_SEC}s overlap)"
+        )
+
+    # Determine number of sources from the first chunk
+    with torch.no_grad():
+        mix = torch.tensor(audio_8k[:chunk_len]).unsqueeze(0).to(device)
+        est = model.separate_batch(mix).squeeze(0).cpu().numpy()  # (t, n_src)
+    num_src = est.shape[1]
+
+    outputs = [np.zeros(total, dtype=np.float32) for _ in range(num_src)]
+    weights = np.zeros(total, dtype=np.float32)
+
+    def accumulate(start: int, est_chunk: np.ndarray) -> None:
+        end = start + est_chunk.shape[0]
+        for i in range(num_src):
+            outputs[i][start:end] += est_chunk[:, i]
+        weights[start:end] += 1.0
+
+    accumulate(0, est)
+
+    for start in range(hop, total, hop):
+        chunk = audio_8k[start : start + chunk_len]
+        with torch.no_grad():
+            mix = torch.tensor(chunk).unsqueeze(0).to(device)
+            est = model.separate_batch(mix).squeeze(0).cpu().numpy()
+        accumulate(start, est)
+        print(f"  chunk {start // hop + 1}/{num_chunks} done")
+
+    # Normalize overlap regions
+    nonzero = weights > 0
+    for i in range(num_src):
+        outputs[i][nonzero] /= weights[nonzero]
+
+    return outputs
 
 
 def separate_from_file(

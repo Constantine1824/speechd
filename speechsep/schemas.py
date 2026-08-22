@@ -3,6 +3,10 @@ from dataclasses import dataclass
 import numpy as np
 
 
+class NonTranscribableAudioError(ValueError):
+    """Raised when a speech segment is too short to transcribe reliably."""
+
+
 @dataclass
 class Segment:
     """A contiguous speech region."""
@@ -95,3 +99,37 @@ class PipelineConfig:
     save_path: str | None = None  # if set, saves transcript to file
     save_fmt: str = "json"  # json / plain / rttm / srt
     print_output: bool = True
+
+    def validate(self) -> None:
+        """Validate configuration before any model is loaded."""
+        if self.denoise_only and self.auto_num_speakers:
+            raise ValueError("denoise_only cannot be combined with auto_num_speakers")
+
+        if not self.denoise_only and self.num_speakers not in (2, 3):
+            raise ValueError(
+                "num_speakers must be 2 or 3 for separation; use denoise_only "
+                "for a single-speaker recording"
+            )
+        if self.max_speakers < 1:
+            raise ValueError("max_speakers must be at least 1")
+        if not 0.0 <= self.vad_threshold <= 1.0:
+            raise ValueError("vad_threshold must be between 0 and 1")
+        if self.min_speech_ms <= 0 or self.min_silence_ms <= 0:
+            raise ValueError("VAD durations must be positive")
+
+        if self.device not in {"cpu", "cuda", "auto"}:
+            raise ValueError("device must be one of: cpu, cuda, auto")
+        if self.device == "cuda":
+            import torch
+
+            if not torch.cuda.is_available():
+                raise ValueError("device='cuda' requested, but CUDA is not available")
+
+        if self.compute_type not in {"int8", "float16", "float32"}:
+            raise ValueError("compute_type must be one of: int8, float16, float32")
+        if self.whisper_model not in {"tiny", "base", "small", "medium", "large-v3"}:
+            raise ValueError(
+                "whisper_model must be one of: tiny, base, small, medium, large-v3"
+            )
+        if self.save_fmt not in {"json", "plain", "rttm", "srt"}:
+            raise ValueError("save_fmt must be one of: json, plain, rttm, srt")

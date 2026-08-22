@@ -8,6 +8,8 @@ from speechsep.schemas import LabeledSegment, Segment
 
 def _cluster(embeddings: np.ndarray, k: int) -> np.ndarray:
     """Run spectral clustering with cosine affinity for a fixed k."""
+    if k == 1:
+        return np.zeros(len(embeddings), dtype=int)
     return SpectralClustering(
         n_clusters=k,
         affinity="cosine",
@@ -27,9 +29,13 @@ def _best_clustering(
     Tries k = 2..min(max_speakers, n-1) and picks the best silhouette score.
     """
     n = len(embeddings)
+    if max_speakers < 1:
+        raise ValueError("max_speakers must be at least 1")
+    if n == 0:
+        raise ValueError("at least one embedding is required for clustering")
     if n <= 2:
-        # One cluster per segment (or a single cluster for n==1).
-        return min(n, 2), np.arange(n) if n <= 2 else np.zeros(n, dtype=int)
+        # Sparse evidence is not enough to infer multiple speakers.
+        return 1, np.zeros(n, dtype=int)
 
     best_k, best_score, best_labels = 2, -1.0, None
     upper = min(max_speakers, n - 1)
@@ -89,15 +95,27 @@ def cluster_speakers(
             f"embeddings ({len(embeddings)}) and segments ({len(segments)}) must match"
         )
 
+    if not embeddings:
+        raise ValueError("cannot cluster an empty embedding list")
+    if max_speakers < 1:
+        raise ValueError("max_speakers must be at least 1")
+    if num_speakers is not None and not 1 <= num_speakers <= len(embeddings):
+        raise ValueError(
+            f"num_speakers must be between 1 and {len(embeddings)}, got {num_speakers}"
+        )
+
     # Stack and L2-normalize embeddings
-    emb_matrix = normalize(np.stack(embeddings), norm="l2")  # (N, 192)
+    emb_matrix = np.asarray(embeddings, dtype=np.float32)
+    if emb_matrix.ndim != 2 or not np.isfinite(emb_matrix).all():
+        raise ValueError("embeddings must be a finite, two-dimensional array")
+    emb_matrix = normalize(emb_matrix, norm="l2")  # (N, 192)
 
     # Handle degenerate case: single segment
     if len(embeddings) == 1:
         return [LabeledSegment(segment=segments[0], speaker_id=0)]
 
     # Estimate k (reusing its labels) or cluster directly for a known k.
-    if num_speakers:
+    if num_speakers is not None:
         labels = _cluster(emb_matrix, num_speakers)
     else:
         _, labels = _best_clustering(emb_matrix, max_speakers=max_speakers)

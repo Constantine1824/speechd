@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torchaudio
 
-from speechsep.schemas import Segment
+from speechsep.schemas import NonTranscribableAudioError, Segment
 
 _vad_model = None
 _get_speech_timestamps = None
@@ -22,6 +22,8 @@ def _load_vad():
 
 
 SILERO_SR = 16000  # silero-vad runs at 16kHz
+MIN_TRANSCRIBABLE_DURATION_MS = 250
+MIN_EMBEDDING_DURATION_MS = 500
 
 
 def detect_speech(
@@ -82,7 +84,16 @@ def detect_speech(
         end_sample = ts["end"]
         start_sec = start_sample / SILERO_SR
         end_sec = end_sample / SILERO_SR
+        duration_ms = (end_sec - start_sec) * 1000
+        if duration_ms < MIN_TRANSCRIBABLE_DURATION_MS:
+            raise NonTranscribableAudioError(
+                f"Speech segment is too short to transcribe reliably: "
+                f"{duration_ms:.0f}ms (minimum {MIN_TRANSCRIBABLE_DURATION_MS}ms)"
+            )
         chunk = audio_16k[start_sample:end_sample]
+        if duration_ms < MIN_EMBEDDING_DURATION_MS:
+            target_samples = round(SILERO_SR * MIN_EMBEDDING_DURATION_MS / 1000)
+            chunk = np.pad(chunk, (0, max(0, target_samples - len(chunk))))
         segments.append(
             Segment(start=start_sec, end=end_sec, audio=chunk, source_id=source_id)
         )

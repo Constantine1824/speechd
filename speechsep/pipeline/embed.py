@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torchaudio
 from speechbrain.inference.speaker import EncoderClassifier
+from speechbrain.utils.fetching import LocalStrategy
 
 from speechsep.schemas import Segment
 
@@ -28,6 +29,8 @@ def _load_embedder(device: str | None = None) -> EncoderClassifier:
             source=ECAPA_CHECKPOINT,
             savedir="pretrained_models/ecapa-tdnn",
             run_opts={"device": resolved},
+            # Windows: symlinking fetched files requires elevated privileges
+            local_strategy=LocalStrategy.COPY,
         )
         _embedder_device = resolved
     return _embedder

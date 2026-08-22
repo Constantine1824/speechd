@@ -1,4 +1,5 @@
 import numpy as np
+import soundfile as sf
 import torchaudio
 
 from speechsep.output import pretty_print, save
@@ -44,10 +45,9 @@ def run(
 
     if isinstance(audio_input, str):
         print(f"Loading audio: {audio_input}")
-        waveform, sr = torchaudio.load(audio_input)
-        if waveform.shape[0] > 1:
-            waveform = waveform.mean(dim=0, keepdim=True)
-        audio_raw = waveform.squeeze(0).numpy()
+        # soundfile backend: torchaudio.load requires torchcodec in torchaudio >= 2.9
+        audio_multichannel, sr = sf.read(audio_input, dtype="float32", always_2d=True)
+        audio_raw = audio_multichannel.mean(axis=1)
         sample_rate = sr
     else:
         audio_raw = audio_input
