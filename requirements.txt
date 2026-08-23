@@ -23,3 +23,8 @@ faster-whisper>=1.0.0
 # Utilities
 torch>=2.0.0
 huggingface-hub>=0.20.0
+
+# API server (optional — `pip install ".[api]"` or uvicorn speechsep.api:app)
+fastapi>=0.110.0
+uvicorn>=0.29.0
+python-multipart>=0.0.9

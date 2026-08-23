@@ -68,6 +68,67 @@ python -m speechsep --file audio.wav --speakers 2 --language en
 `--device cuda` is honored by every model stage (separation, embeddings, and
 transcription), not just Whisper.
 
+## Web API
+
+A small FastAPI server wraps the pipeline for web frontends:
+
+```bash
+pip install ".[api]"
+uvicorn speechsep.api:app --reload
+```
+
+Interactive docs (auto-generated OpenAPI) are at `http://127.0.0.1:8000/docs`.
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/health` | GET | Liveness, package version, resolved device |
+| `/transcribe` | POST | Multipart audio upload → speaker-labeled transcript |
+
+`/transcribe` accepts the audio file plus a few options as form fields:
+
+| Field | Default | Notes |
+|---|---|---|
+| `file` | required | `.wav`, `.mp3`, `.flac`, or `.ogg` |
+| `speakers` | `2` | 2 or 3 speakers |
+| `denoise` | `false` | single-speaker denoising mode |
+| `auto_speakers` | `false` | estimate speaker count automatically |
+| `language` | auto | ISO code like `en`, `fr` |
+| `whisper_model` | `base` | tiny / base / small / medium / large-v3 |
+
+Example call and response:
+
+```bash
+curl -X POST http://127.0.0.1:8000/transcribe \
+    -F "file=@meeting.wav" -F "speakers=2"
+```
+
+```json
+{
+  "duration_ms": 84213,
+  "speakers": ["SPEAKER_00", "SPEAKER_01"],
+  "segments": [
+    {
+      "speaker": "SPEAKER_00",
+      "speaker_id": 0,
+      "start": 0.0,
+      "end": 4.21,
+      "text": "Hey, what did you think of the meeting?",
+      "language": "en",
+      "confidence": 0.9123
+    }
+  ]
+}
+```
+
+Server-side configuration (not client-controllable) via environment variables:
+`SPEECHSEP_DEVICE` (`cpu`/`cuda`/`auto`, default `cpu`),
+`SPEECHSEP_COMPUTE_TYPE` (default `int8`), and `SPEECHSEP_CORS_ORIGINS`
+(comma-separated origins, default `*`).
+
+Note: transcription is synchronous — a long upload holds the HTTP connection
+open until it finishes. Run behind a GPU (or the Colab environment) for
+reasonable speeds on CPU-hostile workloads.
+
 ## Output Formats
 
 - **JSON**: Structured data with speaker, timestamps, text, and confidence
